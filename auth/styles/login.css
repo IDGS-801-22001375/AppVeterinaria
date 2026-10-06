@@ -1,0 +1,17 @@
+.container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 100vh;
+}
+
+
+.login-form{
+    display: block;
+    align-items: center;
+    justify-content: center;
+
+    border: 2px solid #ccc;
+    padding: 35px;
+}
