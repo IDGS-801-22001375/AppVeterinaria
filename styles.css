@@ -1,0 +1,224 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    color: #263238;
+    background-color: #f8fbfc;
+}
+
+.head {
+    min-height: 650px;
+    background: linear-gradient(
+        rgba(0, 90, 100, 0.75),
+        rgba(0, 90, 100, 0.75)
+    ),
+    url("https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&w=1600&q=80");
+
+    background-size: cover;
+    background-position: center;
+    color: white;
+    
+}
+
+.navbar {
+    height: 80px;
+    padding: 0 8%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.navbar h2 {
+    font-size: 25px;
+    margin: 0;
+}
+
+.navbar img{
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.menu {
+    display: flex;
+    gap: 30px;
+}
+
+.menu a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.menu a:hover {
+    color: #8ee6d5;
+}
+
+.btn-login {
+    border: 1px solid white;
+    background: transparent;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.btn-login:hover {
+    background-color: white;
+    color: #007c83;
+}
+
+.content {
+    min-height: 570px;
+    display: flex;
+    align-items: center;
+    padding: 0 8%;
+}
+
+.text {
+    max-width: 650px;
+}
+
+.welcome {
+    color: #8ee6d5;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+}
+
+h1 {
+    font-size: 55px;
+    line-height: 1.1;
+    margin-bottom: 20px;
+}
+
+h1 span {
+    color: #8ee6d5;
+}
+
+.description {
+    font-size: 19px;
+    line-height: 1.6;
+    max-width: 550px;
+    margin-bottom: 30px;
+}
+
+.buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 14px 25px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #8ee6d5;
+    border: none;
+    color: #16484d;
+}
+
+.btn-primary:hover {
+    background-color: white;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: white;
+    color: #007c83;
+}
+
+.services {
+    text-align: center;
+    padding: 70px 8%;
+}
+
+.services h2 {
+    font-size: 35px;
+    margin-bottom: 10px;
+    color: #16484d;
+}
+
+.services > p {
+    color: #667;
+    margin-bottom: 40px;
+}
+
+.cards {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 280px;
+    padding: 30px 25px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.icon {
+    font-size: 40px;
+    margin-bottom: 15px;
+}
+
+.card h3 {
+    color: #16484d;
+    margin-bottom: 10px;
+}
+
+.card p {
+    color: #667;
+    line-height: 1.5;
+}
+
+footer {
+    background-color: #16484d;
+    color: white;
+    text-align: center;
+    padding: 25px;
+}
+
+@media (max-width: 768px) {
+
+    .navbar {
+        padding: 0 5%;
+    }
+
+    .menu {
+        display: none;
+    }
+
+    .content {
+        padding: 0 5%;
+    }
+
+    h1 {
+        font-size: 40px;
+    }
+
+    .description {
+        font-size: 17px;
+    }
+
+    .buttons {
+        flex-direction: column;
+        width: 200px;
+    }
+}
