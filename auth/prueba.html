@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/auth/styles/login.css">
+    <script src="/auth/js/auth.js?v=2" defer></script>
+    <title>Prueba de sesión</title>
+</head>
+<body>
+    <main class="container" data-session-page>
+        <section class="login-form" aria-labelledby="session-title">
+            <header class="login-header">
+                <h1 id="session-title" hidden>Inicio de sesión exitoso</h1>
+            </header>
+            <p class="auth-message" id="auth-message" role="status" aria-live="polite">Verificando tu sesión…</p>
+            <div class="form-container">
+                <button type="button" id="retry-session" hidden>Volver a intentar</button>
+                <button type="button" id="logout" hidden>Cerrar sesión</button>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

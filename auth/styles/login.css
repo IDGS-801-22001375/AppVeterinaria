@@ -107,3 +107,19 @@ body {
 .register-link a:hover {
     text-decoration: underline;
 }
+
+.auth-message {
+    margin: 0 0 20px;
+    color: #16484d;
+    overflow-wrap: anywhere;
+}
+
+.form-container button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+#session-details {
+    overflow-wrap: anywhere;
+    color: #16484d;
+}

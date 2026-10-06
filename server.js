@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
@@ -15,10 +16,11 @@ app.get('/', (req, res) => {
     });
 });
 
-app.use((req, res, next) => {
-    console.log('BODY RECIBIDO:', req.body);
-    next();
-});
+app.use('/auth', express.static(path.join(__dirname, 'auth'), {
+    setHeaders(res) {
+        res.setHeader('Cache-Control', 'no-store');
+    }
+}));
 app.use('/api/auth', authRoutes);
 
 
@@ -33,6 +35,10 @@ app.use('/api/mascotas', mascotasRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-    console.log(`Servidor levantado correctamente en http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Servidor levantado correctamente en http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

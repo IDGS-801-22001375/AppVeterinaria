@@ -1,171 +1,65 @@
-const pool = require('../config/database');
+﻿const users = require('../repositories/authRepository');
+const { jwtSecret } = require('../config/auth');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const clean = (value) => typeof value === 'string' ? value.trim() : '';
+const validEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 const registrar = async (req, res) => {
-    const connection = await pool.getConnection();
-
+    const body = req.body || {};
+    const email = clean(body.email).toLowerCase();
+    const nombre = clean(body.nombre);
+    const apellido = clean(body.apellido);
+    const password = body.password;
+    if (!validEmail(email) || typeof password !== 'string' || !password.trim() || !nombre || !apellido) {
+        return res.status(400).json({ mensaje: 'Email válido, contraseña, nombre y apellido son obligatorios' });
+    }
+    if (Buffer.byteLength(password, 'utf8') > 72) {
+        return res.status(400).json({ mensaje: 'La contraseña debe ocupar como máximo 72 bytes' });
+    }
     try {
-        const {
-            email,
-            password,
-            nombre,
-            apellido,
-            telefono,
-            direccion
-        } = req.body;
-
-        if (!email || !password || !nombre || !apellido) {
-            return res.status(400).json({
-                mensaje: 'Email, contraseña, nombre y apellido son obligatorios'
-            });
+        if (await users.findByEmail(email)) {
+            return res.status(400).json({ mensaje: 'El correo ya está registrado' });
         }
-
-        const [usuarioExistente] = await connection.query(
-            'SELECT id FROM usuarios WHERE email = ?',
-            [email]
-        );
-
-        if (usuarioExistente.length > 0) {
-            return res.status(400).json({
-                mensaje: 'El correo ya está registrado'
-            });
-        }
-
         const passwordHash = await bcrypt.hash(password, 10);
-
-        await connection.beginTransaction();
-
-        const [usuarioResult] = await connection.query(
-            `INSERT INTO usuarios 
-            (email, password_hash, rol)
-            VALUES (?, ?, 'cliente')`,
-            [email, passwordHash]
-        );
-
-        const usuarioId = usuarioResult.insertId;
-
-        await connection.query(
-            `INSERT INTO clientes
-            (usuario_id, nombre, apellido, telefono, direccion)
-            VALUES (?, ?, ?, ?, ?)`,
-            [
-                usuarioId,
-                nombre,
-                apellido,
-                telefono || null,
-                direccion || null
-            ]
-        );
-
-        await connection.commit();
-
-        res.status(201).json({
-            mensaje: 'Usuario registrado correctamente'
+        await users.createClient({
+            email, passwordHash, nombre, apellido,
+            telefono: clean(body.telefono), direccion: clean(body.direccion)
         });
-
+        return res.status(201).json({ mensaje: 'Usuario registrado correctamente' });
     } catch (error) {
-
-    await connection.rollback();
-
-    console.error('ERROR COMPLETO:', error);
-
-    res.status(500).json({
-        mensaje: 'Error al registrar usuario',
-        error: error.message
-    });
-
-
-    } finally {
-        connection.release();
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ mensaje: 'El correo ya está registrado' });
+        }
+        console.error('Error al registrar usuario:', error.message);
+        return res.status(500).json({ mensaje: 'Error al registrar usuario' });
     }
 };
 
 const login = async (req, res) => {
-
+    const body = req.body || {};
+    const email = clean(body.email).toLowerCase();
+    const password = body.password;
+    if (!validEmail(email) || typeof password !== 'string' || !password) {
+        return res.status(400).json({ mensaje: 'Email y contraseña son obligatorios' });
+    }
     try {
-
-        const {
-            email,
-            password
-        } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({
-                mensaje: 'Email y contraseña son obligatorios'
-            });
+        const usuario = await users.findByEmail(email);
+        if (!usuario || !(await bcrypt.compare(password, usuario.password_hash))) {
+            return res.status(401).json({ mensaje: 'Correo o contraseña incorrectos' });
         }
-
-        const [usuarios] = await pool.query(
-            `SELECT 
-                id,
-                email,
-                password_hash,
-                rol,
-                activo
-             FROM usuarios
-             WHERE email = ?`,
-            [email]
-        );
-
-        if (usuarios.length === 0) {
-            return res.status(401).json({
-                mensaje: 'Correo o contraseña incorrectos'
-            });
-        }
-
-        const usuario = usuarios[0];
-
         if (!usuario.activo) {
-            return res.status(403).json({
-                mensaje: 'El usuario está desactivado'
-            });
+            return res.status(403).json({ mensaje: 'El usuario está desactivado' });
         }
-
-        const passwordCorrecta = await bcrypt.compare(
-            password,
-            usuario.password_hash
-        );
-
-        if (!passwordCorrecta) {
-            return res.status(401).json({
-                mensaje: 'Correo o contraseña incorrectos'
-            });
-        }
-
-        const token = jwt.sign(
-            {
-                id: usuario.id,
-                email: usuario.email,
-                rol: usuario.rol
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '8h'
-            }
-        );
-
-        res.json({
-            mensaje: 'Inicio de sesión correcto',
-            token,
-            usuario: {
-                id: usuario.id,
-                email: usuario.email,
-                rol: usuario.rol
-            }
-        });
-
+        const publicUser = { id: usuario.id, email: usuario.email, rol: usuario.rol };
+        const token = jwt.sign(publicUser, jwtSecret, { expiresIn: '8h', algorithm: 'HS256' });
+        res.set('Cache-Control', 'no-store');
+        return res.json({ mensaje: 'Inicio de sesión correcto', token, usuario: publicUser });
     } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            mensaje: 'Error al iniciar sesión'
-        });
+        console.error('Error al iniciar sesión:', error.message);
+        return res.status(500).json({ mensaje: 'Error al iniciar sesión' });
     }
 };
 
-module.exports = {
-    registrar,
-    login
-};
+module.exports = { registrar, login };

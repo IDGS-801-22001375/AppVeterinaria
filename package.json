@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test": "node --test auth-flow.test.cjs auth-api.test.cjs"
   },
   "repository": {
     "type": "git",
