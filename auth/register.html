@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/auth/styles/login.css">
+    <link rel="stylesheet" href="/auth/styles/register.css">
+    <title>Crear cuenta</title>
+</head>
+<body>
+    <main class="container">
+        <section class="login-form register-form" aria-labelledby="register-title">
+            <header class="login-header">
+                <h1 id="register-title">Crear cuenta</h1>
+                <p>Ingresa tus datos para registrarte</p>
+            </header>
+            <form class="form-container register-fields" action="/register" method="POST">
+                <div class="form-field">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+                </div>
+                <div class="form-field">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" autocomplete="new-password" required>
+                </div>
+                <div class="form-field">
+                    <label for="email">Correo electrónico</label>
+                    <input type="email" id="email" name="email" autocomplete="email" autocapitalize="none" spellcheck="false" required>
+                </div>
+                <div class="form-field">
+                    <label for="phone">Teléfono</label>
+                    <input type="tel" id="phone" name="phone" autocomplete="tel" required>
+                </div>
+                <button type="submit">Registrarse</button>
+            </form>
+            <div class="login-link">
+                <p>¿Ya tienes una cuenta? <a href="/auth/login.html">Inicia sesión aquí</a></p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
