@@ -24,6 +24,15 @@ app.use('/auth', express.static(path.join(__dirname, 'auth'), {
     }
 }));
 app.use('/api/auth', authRoutes);
+app.use('/dashboard', express.static(path.join(__dirname, 'dashboard'), { index: 'dashboard.html', setHeaders(res) { res.setHeader('Cache-Control', 'no-store'); } }));
+app.use('/sidebar', express.static(path.join(__dirname, 'sidebar')));
+app.use('/mascotas', express.static(path.join(__dirname, 'mascotas')));
+app.use('/usuarios', express.static(path.join(__dirname, 'usuarios')));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/sync', require('./routes/syncRoutes'));
+app.use('/pwa', express.static(path.join(__dirname, 'pwa')));
+app.get('/manifest.webmanifest', (req, res) => res.sendFile(path.join(__dirname, 'pwa/manifest.webmanifest')));
+app.get('/sw.js', (req, res) => { res.set('Cache-Control', 'no-cache'); res.sendFile(path.join(__dirname, 'pwa/sw.js')); });
 
 
 const clientesRoutes = require('./routes/clientesRoutes');

@@ -10,9 +10,11 @@
     const form = document.querySelector('form[data-auth]');
     const sessionPage = document.querySelector('[data-session-page]');
 
-    function showMessage(text) {
+    function showMessage(text, type = 'error') {
         message.textContent = text;
         message.hidden = !text;
+        message.dataset.type = type;
+        message.setAttribute('role', type === 'error' ? 'alert' : 'status');
     }
 
     async function request(url, options = {}) {
@@ -32,8 +34,8 @@
             }
             return data;
         } catch (error) {
-            if (error.name === 'AbortError') throw new Error('El servidor tardó demasiado. Inténtalo de nuevo.');
-            if (error instanceof TypeError) throw new Error('No se pudo conectar con el backend. Ejecuta npm.cmd start y verifica que el servidor esté disponible.');
+            if (error.name === 'AbortError') throw Object.assign(new Error('El servidor tardó demasiado. Inténtalo de nuevo.'), { network: true });
+            if (error instanceof TypeError) throw Object.assign(new Error('No se pudo conectar con el servidor.'), { network: true });
             throw error;
         } finally {
             clearTimeout(timeout);
@@ -44,20 +46,26 @@
         const endpoint = form.dataset.auth === 'login' ? '/api/auth/login' : '/api/auth/registro';
         showMessage('');
         if (form.dataset.auth === 'login' && new URLSearchParams(location.search).has('registrado')) {
-            showMessage('Cuenta creada correctamente. Ya puedes iniciar sesión.');
+            showMessage(new URLSearchParams(location.search).get('registrado') === 'local' ? 'Cuenta creada en este dispositivo. Ya puedes iniciar sesión sin conexión.' : 'Cuenta creada correctamente. Ya puedes iniciar sesión.', 'success');
         }
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             const button = form.querySelector('button[type="submit"]');
-            if (button.disabled || !form.reportValidity()) return;
+            if (button.disabled) return;
             const values = Object.fromEntries(new FormData(form));
+            const { errors } = authValidation.validate(values, form.dataset.auth);
+            for (const field of form.querySelectorAll('input')) {
+                if (errors[field.name]) field.setAttribute('aria-invalid', 'true');
+                else field.removeAttribute('aria-invalid');
+            }
+            if (Object.keys(errors).length) {
+                showMessage(Object.values(errors).join('\n'));
+                form.querySelector('[aria-invalid="true"]')?.focus();
+                return;
+            }
             for (const key of Object.keys(values)) {
                 if (key !== 'password') values[key] = values[key].trim();
-            }
-            if (Object.values(values).some((value) => !value)) {
-                showMessage('Completa todos los campos obligatorios.');
-                return;
             }
 
             const originalText = button.textContent;
@@ -66,23 +74,28 @@
             form.setAttribute('aria-busy', 'true');
             showMessage('');
             try {
-                const data = await request(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(values)
-                });
                 if (form.dataset.auth === 'login') {
-                    if (typeof data.token !== 'string' || !data.token) {
-                        throw new Error('El servidor no devolvió una sesión válida.');
-                    }
-                    try {
-                        sessionStorage.setItem(TOKEN_KEY, data.token);
-                    } catch {
-                        throw new Error('Permite el almacenamiento de sesión del navegador para iniciar sesión.');
-                    }
-                    location.replace('/auth/prueba.html');
+                    const data = typeof localAuth !== 'undefined'
+                        ? await localAuth.login(values)
+                        : await request(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
+                    if (typeof data.token !== 'string' || !data.token) throw new Error('El servidor no devolvió una sesión válida.');
+                    try { sessionStorage.setItem(TOKEN_KEY, data.token); }
+                    catch { throw new Error('Permite el almacenamiento del navegador para iniciar sesión.'); }
+                    location.replace('/dashboard/dashboard.html');
                 } else {
-                    location.replace('/auth/login.html?registrado=1');
+                    if (typeof localAuth !== 'undefined' && !navigator.onLine) {
+                        await localAuth.register(values);
+                        location.replace('/auth/login.html?registrado=local');
+                    } else {
+                        try {
+                            await request(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
+                            location.replace('/auth/login.html?registrado=1');
+                        } catch (error) {
+                            if (!error.network || typeof localAuth === 'undefined') throw error;
+                            await localAuth.register(values);
+                            location.replace('/auth/login.html?registrado=local');
+                        }
+                    }
                 }
             } catch (error) {
                 showMessage(error.message);

@@ -5,9 +5,10 @@
     "main":  "server.js",
     "scripts":  {
                     "start":  "node server.js",
-                    "test":  "node --test auth-flow.test.cjs auth-api.test.cjs",
+                    "test":  "node --test auth-flow.test.cjs auth-api.test.cjs pwa-offline.test.cjs sync-api.test.cjs local-auth.test.cjs",
                     "db:init":  "node scripts/initDatabase.cjs",
-                    "test:mysql":  "node --test auth-mysql.test.cjs"
+                    "test:mysql":  "node --test auth-mysql.test.cjs",
+                    "test:pwa":  "node --test pwa-browser.test.cjs local-auth-browser.test.cjs"
                 },
     "repository":  {
                        "type":  "git",
@@ -30,5 +31,9 @@
                          "express":  "^5.2.1",
                          "jsonwebtoken":  "^9.0.3",
                          "mysql2":  "^3.24.5"
-                     }
+                     },
+    "devDependencies":  {
+                            "fake-indexeddb":  "^6.2.5",
+                            "playwright":  "^1.63.0"
+                        }
 }

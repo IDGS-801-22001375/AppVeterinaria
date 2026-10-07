@@ -210,3 +210,44 @@ tbody tr:hover {
     }
 
 }
+#dashboard-message { margin-bottom: 20px; color: #a32323; }
+.admin-info { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.btn-refresh:disabled { opacity: .6; cursor: wait; }
+
+/* Sidebar de Baruc integrado al dashboard. */
+body { display: block; }
+.dashboard { display: grid; grid-template-columns: 250px minmax(0, 1fr); }
+.dashboard .sidebar { position: sticky; top: 0; height: 100vh; height: 100dvh; overflow-y: auto; }
+.dashboard .logo { text-decoration: none; }
+.dashboard .logo-icon { flex-shrink: 0; }
+.dashboard .main-content { min-width: 0; width: 100%; }
+.dashboard .logout { width: 100%; border: 0; background: transparent; font-family: inherit; text-align: left; cursor: pointer; }
+.dashboard .logout:hover { background: #fef2f2; }
+.dashboard a:focus-visible, .dashboard button:focus-visible { outline: 3px solid #8ee6d5; outline-offset: 3px; }
+#mascotas { scroll-margin-top: 20px; }
+@media (max-width: 700px) {
+    .dashboard { grid-template-columns: minmax(0, 1fr); }
+    .dashboard .sidebar { position: static; height: auto; width: 100%; padding: 18px 15px; overflow: visible; }
+    .dashboard .logo { margin-bottom: 18px; font-size: 19px; }
+    .dashboard .menu { flex-direction: row; flex-wrap: wrap; }
+    .dashboard .menu-item { gap: 8px; padding: 10px; }
+    .dashboard .bottom-menu { margin-top: 12px; }
+    .dashboard .logout { width: auto; }
+    .dashboard .section-header { flex-wrap: wrap; gap: 12px; }
+    .dashboard .admin-info { max-width: 100%; overflow-wrap: anywhere; }
+}
+
+.dashboard-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+#registration-result { padding: 14px; margin-bottom: 20px; border-radius: 8px; background: #e0f5eb; color: #165b3b; }
+.registration-dialog { width: min(620px, calc(100% - 32px)); max-height: calc(100dvh - 40px); overflow-y: auto; margin: auto; padding: 28px; border: 0; border-radius: 16px; color: #263238; box-shadow: 0 20px 80px #0003; }
+.registration-dialog::backdrop { background: #10383c99; }
+.dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.dialog-heading button { border: 0; background: #f0f4f3; border-radius: 8px; min-width: 40px; min-height: 40px; font-size: 26px; cursor: pointer; }
+.registration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.registration-form label { display: flex; flex-direction: column; gap: 7px; font-size: 14px; font-weight: 600; }
+.registration-form input, .registration-form select, .registration-form textarea { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid #b5c8c2; border-radius: 8px; font: inherit; }
+.registration-form input[aria-invalid="true"] { border-color: #a32323; }
+.full-width { grid-column: 1 / -1; }
+.form-message { color: #a32323; white-space: pre-line; margin: 12px 0; }
+.registration-form small { font-weight: 400; font-size: 12px; }
+@media (max-width: 600px) { .registration-form { grid-template-columns: 1fr; } .registration-dialog { padding: 20px; } }

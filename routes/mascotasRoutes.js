@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.get('/', obtenerMascotas);
 router.get('/:id', obtenerMascota);
-router.post('/', crearMascota);
+router.post('/', require('../middleware/requireSession'), crearMascota);
 router.put('/:id', actualizarMascota);
 router.delete('/:id', eliminarMascota);
 

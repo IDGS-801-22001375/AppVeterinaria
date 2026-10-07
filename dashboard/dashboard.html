@@ -7,12 +7,42 @@
 
     <title>Dashboard | Huellitas Felices</title>
 
-    <link rel="stylesheet" href="styleDash.css">
+    <link rel="stylesheet" href="/sidebar/styleBar.css">
+    <link rel="stylesheet" href="styleDash.css?v=2">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#007c83">
+    <link rel="stylesheet" href="/pwa/pwa.css">
+    <script src="/pwa/offline.js?v=2"></script>
+    <script src="/pwa/local-auth.js?v=1"></script>
+    <script src="/pwa/register.js" defer></script>
 </head>
 
 <body>
 
     <div class="dashboard">
+
+        <aside class="sidebar" aria-label="Menú del sistema">
+            <a class="logo" href="/" aria-label="Huellitas Felices, página principal">
+                <span class="logo-icon" aria-hidden="true">🐾</span>
+                <span>Huellitas felices</span>
+            </a>
+            <nav class="menu" aria-label="Navegación del dashboard">
+                <a href="/" class="menu-item">
+                    <span class="icon" aria-hidden="true">🏠</span><span>Inicio</span>
+                </a>
+                <a href="/dashboard/dashboard.html#mascotas" class="menu-item">
+                    <span class="icon" aria-hidden="true">🐶</span><span>Mascotas</span>
+                </a>
+                <a href="/dashboard/dashboard.html" class="menu-item active" aria-current="page">
+                    <span class="icon" aria-hidden="true">📋</span><span>Dashboard</span>
+                </a>
+            </nav>
+            <div class="bottom-menu">
+                <button type="button" id="logout" class="menu-item logout">
+                    <span class="icon" aria-hidden="true">🚪</span><span>Cerrar sesión</span>
+                </button>
+            </div>
+        </aside>
 
         <!-- CONTENIDO PRINCIPAL -->
         <main class="main-content">
@@ -24,11 +54,17 @@
                 </div>
 
                 <div class="admin-info">
-                    <span>Administrador</span>
+                    <span id="session-user">Verificando sesión…</span>
                 </div>
             </header>
 
 
+            <p id="dashboard-message" role="status" aria-live="polite">Verificando sesión…</p>
+            <div class="dashboard-actions">
+                <button type="button" class="btn-refresh" id="register-pet">＋ Registrar mascota</button>
+                <button type="button" class="btn-refresh" id="register-user">＋ Registrar usuario</button>
+            </div>
+            <p id="registration-result" role="status" aria-live="polite" hidden></p>
             <!-- TARJETAS -->
             <section class="stats">
 
@@ -65,7 +101,7 @@
 
 
             <!-- TABLA DE MASCOTAS -->
-            <section class="dashboard-section">
+            <section class="dashboard-section" id="mascotas">
 
                 <div class="section-header">
                     <div>
@@ -73,7 +109,7 @@
                         <p>Clientes y mascotas registradas en el sistema</p>
                     </div>
 
-                    <button class="btn-refresh" onclick="cargarDashboard()">
+                    <button class="btn-refresh" type="button" id="refresh-dashboard">
                         Actualizar
                     </button>
                 </div>
@@ -91,13 +127,14 @@
                                 <th>Sexo</th>
                                 <th>Propietario</th>
                                 <th>Teléfono</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
 
                         <tbody id="tablaMascotas">
 
                             <tr>
-                                <td colspan="6" class="loading">
+                                <td colspan="7" class="loading">
                                     Cargando información...
                                 </td>
                             </tr>
@@ -131,14 +168,14 @@
                                 <th>Nombre</th>
                                 <th>Correo</th>
                                 <th>Teléfono</th>
-                                <th>Dirección</th>
+                                <th>Dirección</th><th>Acciones</th>
                             </tr>
                         </thead>
 
                         <tbody id="tablaClientes">
 
                             <tr>
-                                <td colspan="4" class="loading">
+                                <td colspan="5" class="loading">
                                     Cargando información...
                                 </td>
                             </tr>
@@ -156,7 +193,40 @@
     </div>
 
 
-    <script src="dashboard.js"></script>
+    <dialog id="pet-dialog" class="registration-dialog" aria-labelledby="pet-title">
+        <div class="dialog-heading"><h2 id="pet-title">Registrar mascota</h2><button type="button" data-close aria-label="Cerrar formulario">×</button></div>
+        <p id="pet-message" class="form-message" role="status" aria-live="polite"></p>
+        <form id="pet-form" class="registration-form">
+            <label>Propietario<select name="cliente_id" required></select></label>
+            <label>Nombre<input name="nombre" maxlength="80" required></label>
+            <label>Especie<input name="especie" value="perro" maxlength="40" required></label>
+            <label>Raza<input name="raza" maxlength="80"></label>
+            <label>Sexo<select name="sexo"><option value="">Sin especificar</option><option value="macho">Macho</option><option value="hembra">Hembra</option></select></label>
+            <label>Fecha de nacimiento<input type="date" name="fecha_nacimiento"></label>
+            <label>Color<input name="color" maxlength="50"></label>
+            <label class="full-width">Observaciones<textarea name="observaciones" maxlength="10000" rows="3"></textarea></label>
+            <button type="submit" class="btn-refresh full-width">Guardar mascota</button>
+        </form>
+    </dialog>
+    <dialog id="user-dialog" class="registration-dialog" aria-labelledby="user-title">
+        <div class="dialog-heading"><h2 id="user-title">Registrar usuario</h2><button type="button" data-close aria-label="Cerrar formulario">×</button></div>
+        <p>Se creará una cuenta de cliente con su perfil. Tu sesión actual se conservará.</p>
+        <p id="user-message" class="form-message" role="status" aria-live="polite"></p>
+        <form id="user-form" class="registration-form" novalidate>
+            <label>Nombre<input name="nombre" maxlength="80" autocomplete="given-name" required></label>
+            <label>Apellido<input name="apellido" maxlength="80" autocomplete="family-name" required></label>
+            <label>Correo<input type="email" name="email" maxlength="150" autocomplete="email" required></label>
+            <label>Contraseña<input type="password" name="password" minlength="8" autocomplete="new-password" required><small>Mínimo 8 caracteres</small></label>
+            <label>Teléfono<input type="tel" name="telefono" maxlength="30" autocomplete="tel"></label>
+            <label>Dirección<input name="direccion" maxlength="200" autocomplete="street-address"></label>
+            <button type="submit" class="btn-refresh full-width">Guardar usuario</button>
+        </form>
+    </dialog>
+    <script src="/auth/js/validation.js?v=1"></script>
+    <script src="/sidebar/sidebar.js?v=1"></script>
+    <script src="/mascotas/mascotas.js?v=1"></script>
+    <script src="/usuarios/usuarios.js?v=1"></script>
+    <script src="dashboard.js?v=3"></script>
 
 </body>
 

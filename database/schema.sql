@@ -40,3 +40,13 @@ CREATE TABLE IF NOT EXISTS mascotas (
 ) ENGINE=InnoDB;
 
 -- No insertar HASH_GENERADO: el registro genera hashes bcrypt reales.
+
+-- Ejecutar para habilitar sincronización offline sin duplicar registros.
+CREATE TABLE IF NOT EXISTS operaciones_offline (
+    propietario_id INT UNSIGNED NOT NULL,
+    operacion_id CHAR(36) NOT NULL,
+    huella CHAR(64) NOT NULL,
+    resultado JSON NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (propietario_id, operacion_id)
+) ENGINE=InnoDB;

@@ -5,7 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/auth/styles/login.css">
     <title>Iniciar sesión</title>
-    <script src="/auth/js/auth.js?v=2" defer></script>
+    <script src="/auth/js/validation.js?v=1" defer></script>
+    <script src="/auth/js/auth.js?v=4" defer></script>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#007c83">
+    <link rel="stylesheet" href="/pwa/pwa.css">
+    <script src="/pwa/offline.js?v=2"></script>
+    <script src="/pwa/local-auth.js?v=1"></script>
+    <script src="/pwa/register.js" defer></script>
 </head>
 <body>
     <main class="container">
@@ -15,10 +22,10 @@
                 <p>Ingresa tus credenciales para acceder</p>
             </header>
             <p class="auth-message" id="auth-message" role="status" aria-live="polite" hidden></p>
-            <form class="form-container" data-auth="login" action="/api/auth/login" method="POST">
+            <form class="form-container" data-auth="login" action="/api/auth/login" method="POST" novalidate>
                 <div class="form-field">
                     <label for="email">Correo electrónico</label>
-                    <input type="email" id="email" name="email" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+                    <input type="email" id="email" name="email" maxlength="150" autocomplete="username" autocapitalize="none" spellcheck="false" required>
                 </div>
                 <div class="form-field">
                     <label for="password">Contraseña</label>
@@ -27,7 +34,7 @@
                 <button type="submit">Iniciar Sesión</button>
             </form>
 
-            <div class="register-link">
+            <div class="register-link"><p><a href="/dashboard/dashboard.html">Continuar con mi sesión abierta</a></p>
                 <p>¿No tienes una cuenta? <a href="/auth/register.html">Regístrate aquí</a></p>
             </div>
         </section>

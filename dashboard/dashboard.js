@@ -1,152 +1,86 @@
-const API_URL = "http://localhost:3000/api";
+const TOKEN_KEY = 'veterinaria.token';
+const isLiveServer = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) && location.port === '5500';
+const API_URL = (isLiveServer ? `${location.protocol}//${location.hostname}:3000` : '') + '/api';
+const statusMessage = document.getElementById('dashboard-message');
+const refreshButton = document.getElementById('refresh-dashboard');
+let loading = false;
 
+function cerrarSesion() {
+    sessionStorage.removeItem(TOKEN_KEY);
+    location.replace('/auth/login.html');
+}
+
+async function solicitar(route, token) {
+    try { return await offlineApp.get('/api' + route); }
+    catch (error) { if (error.status === 401 || error.status === 403) cerrarSesion(); throw error; }
+}
+function editButton(type, row) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'btn-refresh';
+    button.textContent = row.pending ? 'Editar (pendiente)' : 'Editar';
+    button.addEventListener('click', () => document.dispatchEvent(new CustomEvent(type + ':edit', { detail: structuredClone(row) })));
+    return button;
+}
+function mostrarTabla(id, filas, columnas, mensajeVacio) {
+    const tabla = document.getElementById(id);
+    tabla.replaceChildren();
+    if (!filas.length) {
+        const fila = document.createElement('tr');
+        const celda = document.createElement('td');
+        celda.colSpan = columnas.length;
+        celda.className = 'loading';
+        celda.textContent = mensajeVacio;
+        fila.appendChild(celda);
+        tabla.appendChild(fila);
+        return;
+    }
+    for (const datos of filas) {
+        const fila = document.createElement('tr');
+        for (const valor of columnas) {
+            const celda = document.createElement('td');
+            const content = valor(datos);
+            if (content instanceof Node) celda.appendChild(content); else celda.textContent = content;
+            fila.appendChild(celda);
+        }
+        tabla.appendChild(fila);
+    }
+}
 
 async function cargarDashboard() {
-
+    if (loading) return;
+    loading = true;
+    refreshButton.disabled = true;
+    statusMessage.textContent = 'Verificando sesión y cargando información…';
+    statusMessage.hidden = false;
     try {
-
-        const respuesta = await fetch(`${API_URL}/dashboard`);
-
-        if (!respuesta.ok) {
-            throw new Error("No se pudo obtener la información");
-        }
-
-        const datos = await respuesta.json();
-
-        console.log("Datos recibidos:", datos);
-
-        // Totales
-        document.getElementById("totalClientes").textContent =
-            datos.totalClientes;
-
-        document.getElementById("totalMascotas").textContent =
-            datos.totalMascotas;
-
-        document.getElementById("totalUsuarios").textContent =
-            datos.totalUsuarios;
-
-
-        // Mostrar mascotas
-        mostrarMascotas(datos.mascotas);
-
-        // Mostrar clientes
-        mostrarClientes(datos.clientes);
-
-
+        const token = sessionStorage.getItem(TOKEN_KEY);
+        if (!token) { location.replace('/auth/login.html'); return; }
+        const session = await solicitar('/auth/sesion', token);
+        document.getElementById('session-user').textContent = `${session.usuario.email} · ${session.usuario.rol === 'admin' ? 'Administrador' : 'Cliente'}`;
+        const datos = await solicitar('/dashboard', token);
+        for (const id of ['totalClientes', 'totalMascotas', 'totalUsuarios']) document.getElementById(id).textContent = datos[id];
+        mostrarTabla('tablaMascotas', datos.mascotas, [m => m.nombre, m => m.especie, m => m.raza ?? 'Sin especificar', m => m.sexo ?? 'Sin especificar', m => m.propietario, m => m.telefono ?? 'Sin teléfono', m => editButton('pet', m)], 'No hay mascotas registradas.');
+        mostrarTabla('tablaClientes', datos.clientes, [c => `${c.nombre} ${c.apellido}`, c => c.email, c => c.telefono ?? 'Sin teléfono', c => c.direccion ?? 'Sin dirección', c => editButton('user', c)], 'No hay clientes registrados.');
+        statusMessage.hidden = true;
     } catch (error) {
-
-        console.error("Error:", error);
-
-        document.getElementById("tablaMascotas").innerHTML = `
-            <tr>
-                <td colspan="6" class="loading">
-                    No se pudo conectar con el servidor.
-                </td>
-            </tr>
-        `;
-
+        statusMessage.textContent = error.name === 'TimeoutError' ? 'El servidor tardó demasiado. Pulsa Actualizar para intentar de nuevo.' : error instanceof TypeError ? 'No se pudo conectar con el servidor. Pulsa Actualizar para intentar de nuevo.' : error.message;
+        mostrarTabla('tablaMascotas', [], Array(7).fill(() => ''), 'No se pudo cargar la información.');
+        mostrarTabla('tablaClientes', [], Array(5).fill(() => ''), 'No se pudo cargar la información.');
+        for (const id of ['totalClientes', 'totalMascotas', 'totalUsuarios']) document.getElementById(id).textContent = '—';
+    } finally {
+        loading = false;
+        refreshButton.disabled = false;
     }
-
 }
+refreshButton.addEventListener('click', cargarDashboard);
+document.getElementById('logout').addEventListener('click', cerrarSesion);
+window.addEventListener('pageshow', cargarDashboard);
 
-
-/* MASCOTAS */
-
-function mostrarMascotas(mascotas) {
-
-    const tabla = document.getElementById("tablaMascotas");
-
-    tabla.innerHTML = "";
-
-    if (mascotas.length === 0) {
-
-        tabla.innerHTML = `
-            <tr>
-                <td colspan="6" class="loading">
-                    No hay mascotas registradas.
-                </td>
-            </tr>
-        `;
-
-        return;
-    }
-
-
-    mascotas.forEach(mascota => {
-
-        const fila = document.createElement("tr");
-
-        fila.innerHTML = `
-            <td>${mascota.nombre}</td>
-            <td>${mascota.especie}</td>
-            <td>${mascota.raza ?? "Sin especificar"}</td>
-            <td>${mascota.sexo ?? "Sin especificar"}</td>
-            <td>${mascota.propietario}</td>
-            <td>${mascota.telefono ?? "Sin teléfono"}</td>
-        `;
-
-        tabla.appendChild(fila);
-
-    });
-
-}
-
-
-/* CLIENTES */
-
-function mostrarClientes(clientes) {
-
-    const tabla = document.getElementById("tablaClientes");
-
-    tabla.innerHTML = "";
-
-    if (clientes.length === 0) {
-
-        tabla.innerHTML = `
-            <tr>
-                <td colspan="4" class="loading">
-                    No hay clientes registrados.
-                </td>
-            </tr>
-        `;
-
-        return;
-    }
-
-
-    clientes.forEach(cliente => {
-
-        const fila = document.createElement("tr");
-
-        fila.innerHTML = `
-            <td>
-                ${cliente.nombre} ${cliente.apellido}
-            </td>
-
-            <td>
-                ${cliente.email}
-            </td>
-
-            <td>
-                ${cliente.telefono ?? "Sin teléfono"}
-            </td>
-
-            <td>
-                ${cliente.direccion ?? "Sin dirección"}
-            </td>
-        `;
-
-        tabla.appendChild(fila);
-
-    });
-
-}
-
-
-/* CARGAR AL ABRIR LA PÁGINA */
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    cargarDashboard();
-
+document.addEventListener('dashboard:refresh', async event => {
+    const result = document.getElementById('registration-result');
+    result.textContent = event.detail.mensaje;
+    result.hidden = false;
+    await cargarDashboard();
 });
+
+document.addEventListener('offline:changed', () => { if (!loading) cargarDashboard(); });

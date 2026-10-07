@@ -126,3 +126,9 @@ body {
     overflow-wrap: anywhere;
     color: #16484d;
 }
+
+.auth-message { white-space: pre-line; }
+.auth-message[data-type="error"] { color: #a32323; background: #fff1f1; padding: 12px; border-radius: 8px; }
+.auth-message[data-type="success"] { color: #165b3b; background: #eaf8ef; padding: 12px; border-radius: 8px; }
+.form-field input[aria-invalid="true"] { border: 2px solid #b32929; }
+.form-field small { font-size: 12px; color: #49666a; }
