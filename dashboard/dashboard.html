@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard | Huellitas Felices</title>
+
+    <link rel="stylesheet" href="styleDash.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content">
+
+            <header class="dashboard-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Bienvenido al sistema de Huellitas Felices</p>
+                </div>
+
+                <div class="admin-info">
+                    <span>Administrador</span>
+                </div>
+            </header>
+
+
+            <!-- TARJETAS -->
+            <section class="stats">
+
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+
+                    <div>
+                        <p>Clientes</p>
+                        <h2 id="totalClientes">0</h2>
+                    </div>
+                </div>
+
+
+                <div class="stat-card">
+                    <div class="stat-icon">🐾</div>
+
+                    <div>
+                        <p>Mascotas</p>
+                        <h2 id="totalMascotas">0</h2>
+                    </div>
+                </div>
+
+
+                <div class="stat-card">
+                    <div class="stat-icon">👤</div>
+
+                    <div>
+                        <p>Usuarios</p>
+                        <h2 id="totalUsuarios">0</h2>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- TABLA DE MASCOTAS -->
+            <section class="dashboard-section">
+
+                <div class="section-header">
+                    <div>
+                        <h2>Mascotas registradas</h2>
+                        <p>Clientes y mascotas registradas en el sistema</p>
+                    </div>
+
+                    <button class="btn-refresh" onclick="cargarDashboard()">
+                        Actualizar
+                    </button>
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Especie</th>
+                                <th>Raza</th>
+                                <th>Sexo</th>
+                                <th>Propietario</th>
+                                <th>Teléfono</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tablaMascotas">
+
+                            <tr>
+                                <td colspan="6" class="loading">
+                                    Cargando información...
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- TABLA DE CLIENTES -->
+            <section class="dashboard-section">
+
+                <div class="section-header">
+                    <div>
+                        <h2>Clientes registrados</h2>
+                        <p>Información de los propietarios</p>
+                    </div>
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Teléfono</th>
+                                <th>Dirección</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tablaClientes">
+
+                            <tr>
+                                <td colspan="4" class="loading">
+                                    Cargando información...
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <script src="dashboard.js"></script>
+
+</body>
+
+</html>
