@@ -10,11 +10,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.json({
-        mensaje: 'Servidor levantado correctamente'
-    });
+app.get(['/', '/PaginaPrincipal.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'PaginaPrincipal.html'));
 });
+app.get('/styles.css', (req, res) => {
+    res.sendFile(path.join(__dirname, 'styles.css'));
+});
+app.use('/img', express.static(path.join(__dirname, 'img')));
 
 app.use('/auth', express.static(path.join(__dirname, 'auth'), {
     setHeaders(res) {
@@ -36,8 +38,17 @@ app.use('/api/mascotas', mascotasRoutes);
 const PORT = process.env.PORT || 3000;
 
 if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`Servidor levantado correctamente en http://localhost:${PORT}`);
+    const pool = require('./config/database');
+    pool.query('SELECT id FROM usuarios LIMIT 0')
+        .then(() => pool.query('SELECT usuario_id FROM clientes LIMIT 0'))
+        .then(() => pool.query('SELECT cliente_id FROM mascotas LIMIT 0'))
+        .then(() => app.listen(PORT, () => {
+            console.log(`Conectado a MySQL. Inicio: http://localhost:${PORT}/`);
+        }))
+        .catch(async (error) => {
+            console.error(`No se pudo conectar a MySQL (${error.code || 'ERROR'}). Revisa .env y ejecuta database/schema.sql.`);
+            await pool.end();
+            process.exitCode = 1;
     });
 }
 

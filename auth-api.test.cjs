@@ -1,77 +1,83 @@
-const { test } = require('node:test');
+﻿const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs/promises');
-const os = require('node:os');
-const path = require('node:path');
 const bcrypt = require('bcrypt');
+process.env.JWT_SECRET = 'test-secret-with-at-least-32-bytes-for-tests';
 
-test('JSON: registro, persistencia, login y sesión real', async (t) => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'veterinaria-auth-'));
-    const file = path.join(directory, 'usuarios.json');
-    await fs.copyFile(path.join(__dirname, 'data/usuarios.json'), file);
-    process.env.DB_DRIVER = 'json';
-    process.env.JSON_DB_PATH = file;
-    process.env.JWT_SECRET = 'test-only-secret';
+// Sustituye solo la conexión durante estas pruebas; producción siempre usa MySQL.
+const users = new Map();
+let nextId = 1;
+let failProfile = false;
+let transaction;
+const connection = {
+    async beginTransaction() { transaction = null; },
+    async execute(sql, params) {
+        if (sql.startsWith('INSERT INTO usuarios')) {
+            if ([...users.values()].some((user) => user.email === params[0])) {
+                throw Object.assign(new Error('Duplicate'), { code: 'ER_DUP_ENTRY' });
+            }
+            transaction = { id: nextId++, email: params[0], password_hash: params[1], rol: 'cliente', activo: 1 };
+            return [{ insertId: transaction.id }];
+        }
+        if (failProfile) throw new Error('Profile insert failed');
+        transaction.profile = params;
+        return [{ affectedRows: 1 }];
+    },
+    async commit() { users.set(transaction.id, transaction); transaction = null; },
+    async rollback() { transaction = null; },
+    release() {}
+};
+const pool = {
+    async execute(sql, params) {
+        if (sql.includes('WHERE email')) return [[...users.values()].filter((user) => user.email === params[0])];
+        return [[...users.values()].filter((user) => user.id === params[0])];
+    },
+    async getConnection() { return connection; }
+};
+require.cache[require.resolve('./config/database')] = { exports: pool };
+
+test('API y repositorio MySQL: registro, login, sesión y rollback', async (t) => {
     const app = require('./server');
     const server = app.listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
-    t.after(async () => {
-        await new Promise((resolve) => server.close(resolve));
-        await fs.rm(directory, { recursive: true, force: true });
-    });
+    t.after(() => new Promise((resolve) => server.close(resolve)));
     const base = `http://127.0.0.1:${server.address().port}`;
     const post = (route, body) => fetch(base + '/api/auth/' + route, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
-    const user = { email: 'new@example.test', password: 'Example123!', nombre: 'Ana', apellido: 'Pérez', telefono: '5551234567' };
-
-    await t.test('cuenta demo y contraseña incorrecta', async () => {
-        assert.equal((await post('login', { email: 'demo@veterinaria.test', password: 'Demo1234!' })).status, 200);
-        assert.equal((await post('login', { ...user, password: 'incorrecta' })).status, 401);
-    });
-    await t.test('registro persiste cuenta cifrada y perfil relacionado', async () => {
+    const user = { email: 'ana@example.test', password: 'Example123!', nombre: 'Ana', apellido: 'Pérez', telefono: '5551234567' };
+    let token;
+    await t.test('registro guarda bcrypt y perfil relacionado', async () => {
         assert.equal((await post('registro', user)).status, 201);
-        const data = JSON.parse(await fs.readFile(file, 'utf8'));
-        const saved = data.usuarios.find((row) => row.email === user.email);
+        const saved = [...users.values()][0];
         assert.equal(await bcrypt.compare(user.password, saved.password_hash), true);
-        assert.equal(saved.password, undefined);
-        assert.equal(saved.activo, 1);
-        const profile = data.clientes.find((row) => row.usuario_id === saved.id);
-        assert.equal(profile.nombre, user.nombre);
-        assert.equal(profile.telefono, user.telefono);
-        assert.equal(profile.direccion, null);
-        // Un adaptador recién cargado lee el registro desde disco.
-        delete require.cache[require.resolve('./repositories/jsonAuthRepository')];
-        assert.equal((await require('./repositories/jsonAuthRepository').findByEmail(user.email)).id, saved.id);
+        assert.deepEqual(saved.profile, [saved.id, user.nombre, user.apellido, user.telefono, null]);
+        assert.equal((await post('registro', { ...user, email: user.email.toUpperCase() })).status, 400);
     });
-    await t.test('login emite JWT que autoriza sesión y no expone hash', async () => {
+    await t.test('login y sesión validan JWT sin exponer hash', async () => {
         const response = await post('login', user);
         assert.equal(response.status, 200);
         const data = await response.json();
+        token = data.token;
         assert.equal(data.usuario.password_hash, undefined);
-        const session = await fetch(base + '/api/auth/sesion', { headers: { Authorization: `Bearer ${data.token}` } });
+        const session = await fetch(base + '/api/auth/sesion', { headers: { Authorization: `Bearer ${token}` } });
         assert.equal(session.status, 200);
         assert.equal((await session.json()).usuario.email, user.email);
         assert.equal((await fetch(base + '/api/auth/sesion')).status, 401);
-        assert.equal((await fetch(base + '/auth/prueba.html')).status, 200);
         assert.equal((await fetch(base + '/data/usuarios.json')).status, 404);
     });
-    await t.test('duplicados concurrentes no crean filas parciales', async () => {
-        const parallel = { ...user, email: 'parallel@example.test' };
-        const responses = await Promise.all([post('registro', parallel), post('registro', parallel)]);
-        assert.deepEqual(responses.map((response) => response.status).sort(), [201, 400]);
-        assert.equal((await post('registro', { ...user, email: user.email.toUpperCase() })).status, 400);
-        const data = JSON.parse(await fs.readFile(file, 'utf8'));
-        assert.equal(data.usuarios.filter((row) => row.email === parallel.email).length, 1);
-        assert.equal(data.usuarios.length, data.clientes.length);
-    });
-    await t.test('validación y cuenta desactivada', async () => {
+    await t.test('validación, contraseña incorrecta y usuario inactivo', async () => {
         assert.equal((await post('registro', {})).status, 400);
-        assert.equal((await post('login', {})).status, 400);
+        assert.equal((await post('registro', { ...user, nombre: 'a'.repeat(81) })).status, 400);
+        assert.equal((await post('registro', { ...user, password: 'a'.repeat(73) })).status, 400);
         assert.equal((await post('login', { ...user, password: 'incorrecta' })).status, 401);
-        const data = JSON.parse(await fs.readFile(file, 'utf8'));
-        data.usuarios.find((row) => row.email === user.email).activo = 0;
-        await fs.writeFile(file, JSON.stringify(data));
+        [...users.values()][0].activo = 0;
         assert.equal((await post('login', user)).status, 403);
+        assert.equal((await fetch(base + '/api/auth/sesion', { headers: { Authorization: `Bearer ${token}` } })).status, 401);
+    });
+    await t.test('fallo al crear perfil revierte el usuario', async () => {
+        failProfile = true;
+        assert.equal((await post('registro', { ...user, email: 'rollback@example.test' })).status, 500);
+        assert.equal(users.size, 1);
+        assert.equal(transaction, null);
     });
 });

@@ -18,6 +18,10 @@ const registrar = async (req, res) => {
     if (Buffer.byteLength(password, 'utf8') > 72) {
         return res.status(400).json({ mensaje: 'La contraseña debe ocupar como máximo 72 bytes' });
     }
+    if (email.length > 150 || nombre.length > 80 || apellido.length > 80
+        || clean(body.telefono).length > 30 || clean(body.direccion).length > 200) {
+        return res.status(400).json({ mensaje: 'Uno de los campos supera la longitud permitida' });
+    }
     try {
         if (await users.findByEmail(email)) {
             return res.status(400).json({ mensaje: 'El correo ya está registrado' });
@@ -41,7 +45,8 @@ const login = async (req, res) => {
     const body = req.body || {};
     const email = clean(body.email).toLowerCase();
     const password = body.password;
-    if (!validEmail(email) || typeof password !== 'string' || !password) {
+    if (!validEmail(email) || typeof password !== 'string' || !password
+        || Buffer.byteLength(password, 'utf8') > 72) {
         return res.status(400).json({ mensaje: 'Email y contraseña son obligatorios' });
     }
     try {

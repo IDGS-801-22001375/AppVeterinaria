@@ -1,45 +1,56 @@
-# Autenticación con JSON o MySQL
+# Login y registro con MySQL
 
-Ejecuta `npm.cmd install` y `npm.cmd start`. Abre
-http://localhost:3000/auth/login.html (o el puerto de PORT).
-También puedes abrir el frontend con Live Server en localhost:5500 o
-127.0.0.1:5500: auth.js envía la API al mismo host en el puerto 3000.
-Debes mantener Node activo con `npm.cmd start`. Si configuras otro PORT,
-abre directamente el frontend desde ese puerto de Node. No uses file://.
+El backend usa únicamente MySQL, mediante `mysql2/promise` en
+`config/database.js`. Se conservan clientes, mascotas y las pantallas de
+login, registro y sesión. Se eliminó la carpeta `data` y el adaptador JSON.
 
-Sin configuración, el login y el registro usan `data/usuarios.json`.
-Cuenta de ejemplo: `demo@veterinaria.test`, contraseña `Demo1234!`.
-El registro guarda la cuenta y su perfil juntos en el archivo; después redirige
-al login. Al iniciar sesión se muestra una página con el título
-“Inicio de sesión exitoso”, tras verificar el JWT en el backend.
+## Configuración
 
-## Datos
+1. Ejecuta `npm.cmd install`.
+2. Copia `.env.example` a `.env` si no existe. Configura:
+   - `DB_HOST=localhost`: MySQL instalado en esta computadora.
+   - `DB_PORT`: puerto MySQL, normalmente `3306`.
+   - `DB_USER=root`: usuario de MySQL.
+   - `DB_PASSWORD`: contraseña de ese usuario; vacío solo si la cuenta lo permite.
+   - `DB_NAME=veterinaria_huellitas_felices`.
+   - `JWT_SECRET`: secreto aleatorio de al menos 32 bytes.
+3. Inicia tu servidor MySQL y ejecuta `npm.cmd run db:init`, o ejecuta
+   `database/schema.sql` en MySQL Workbench. El script crea la base y las
+   tablas si no existen; no borra ni migra datos existentes.
+4. Ejecuta `npm.cmd start` y abre http://localhost:3000/auth/register.html.
 
-- `usuarios`: id, email, password_hash (bcrypt), rol, activo.
-- `clientes`: id, usuario_id, nombre, apellido, telefono, direccion, creado_en.
+El `.env` local queda excluido de Git. Para generar un secreto:
+`node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"`.
 
-`clientes.usuario_id` referencia `usuarios.id`, igual que las consultas existentes.
-No se guarda la contraseña original. El archivo queda fuera del directorio público.
-Los registros persisten al reiniciar. Sin JWT_SECRET, las sesiones de la simulación
-dejan de ser válidas al reiniciar el servidor.
+La conexión configurada usa el servidor local `localhost`, el usuario `root` y
+el puerto `3306`. Configura la contraseña de root en `DB_PASSWORD`.
 
-## Cambiar a MySQL
+## Autenticación
 
-Copia `.env.example` a `.env` si todavía no tienes uno. Configura `DB_DRIVER=mysql`,
-las variables `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` y un
-`JWT_SECRET` largo y aleatorio. Reinicia el servidor. No cambies HTML, JavaScript,
-rutas ni controladores: `repositories/authRepository.js` elige el adaptador.
-La conexión real sigue en `config/database.js`.
+La conexión a MySQL usa usuario y contraseña. La autenticación integrada
+de Windows de SQL Server no se utiliza con este backend MySQL/mysql2.
+El login de la aplicación siempre usa correo y contraseña de `usuarios`.
 
-La base debe tener las tablas que ya usa el backend: IDs autoincrementales,
-email único en usuarios, activo con valor inicial 1, password_hash de longitud
-suficiente para bcrypt y la relación clientes.usuario_id → usuarios.id.
-creado_en debe tener su valor por defecto en clientes.
-El JSON no se importa automáticamente a MySQL; sus cuentas son datos de prueba.
+El registro crea `usuarios` y `clientes` en una transacción, guarda el hash
+bcrypt y asigna el rol `cliente`. El login devuelve un JWT de 8 horas.
+La página de sesión verifica el token y el estado activo desde el backend.
+Los usuarios del antiguo JSON no se importan: vuelve a registrarlos.
 
-El adaptador JSON cubre autenticación (registro, login y consulta de sesión).
-Las rutas CRUD de clientes y mascotas conservan su conexión MySQL original.
-La simulación admite un solo proceso del servidor; sus escrituras se serializan
-y se publican por reemplazo del archivo. No es una base para producción.
+No ejecutes el INSERT con `HASH_GENERADO`: es un marcador, no un hash válido.
+Para un administrador, registra primero la cuenta y cambia su rol desde MySQL:
+`UPDATE usuarios SET rol = 'admin' WHERE email = 'admin@ejemplo.com';`
 
-Ejecuta `npm.cmd test` para probar frontend y API con un JSON temporal aislado.
+## Rutas y comprobación
+
+- `POST /api/auth/registro`: email, password, nombre, apellido; telefono y direccion opcionales.
+- `POST /api/auth/login`: email y password.
+- `GET /api/auth/sesion`: cabecera `Authorization: Bearer <token>`.
+- `/api/clientes` y `/api/mascotas`: conserva las rutas CRUD del backend existente.
+
+Live Server en el puerto 5500 envía la API al mismo host en el puerto 3000.
+Si cambias PORT, abre las pantallas desde Express.
+
+`npm.cmd test` comprueba frontend, API y transacciones con una conexión simulada
+solo durante las pruebas. `npm.cmd run test:mysql` comprueba el flujo real en tu
+base configurada, crea cuentas con correos únicos y elimina solo esas cuentas
+al terminar. Ejecuta `db:init` antes; las credenciales deben estar configuradas.

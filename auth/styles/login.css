@@ -18,12 +18,15 @@ body {
 
 .container {
     display: flex;
+    align-items: center;
+    justify-content: center;
     min-height: 100vh;
     min-height: 100dvh;
     padding: clamp(16px, 4vw, 40px);
 }
 
 .login-form {
+    display: block;
     width: 100%;
     max-width: 420px;
     min-width: 0;

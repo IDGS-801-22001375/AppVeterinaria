@@ -76,7 +76,7 @@ const obtenerCliente = async (req, res) => {
 
 const crearCliente = async (req, res) => {
 
-    const connection = await pool.getConnection();
+    let connection;
 
     try {
 
@@ -95,6 +95,7 @@ const crearCliente = async (req, res) => {
             });
         }
 
+        connection = await pool.getConnection();
         const [usuarioExistente] = await connection.query(
             'SELECT id FROM usuarios WHERE email = ?',
             [email]
@@ -140,7 +141,7 @@ const crearCliente = async (req, res) => {
 
     } catch (error) {
 
-        await connection.rollback();
+        if (connection) await connection.rollback();
 
         console.error(error);
 
@@ -150,7 +151,7 @@ const crearCliente = async (req, res) => {
 
     } finally {
 
-        connection.release();
+        if (connection) connection.release();
     }
 };
 

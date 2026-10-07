@@ -121,6 +121,7 @@
                 });
                 if (!data.usuario) throw new Error('El servidor no devolvió los datos de la sesión.');
                 details.hidden = false;
+                logout.hidden = false;
                 showMessage('');
             } catch (error) {
                 if (error.status === 401 || error.status === 403) {
